@@ -1,181 +1,213 @@
 # Revenue Intelligence Inbox
 
-A manager workspace that turns incoming calls, meetings, transcripts, and notes into an understandable, auditable queue of decisions and next actions for SpendNest.
+A manager workspace that turns incoming calls, meetings, and transcripts into an auditable queue of decisions and next actions — built for the SpendNest hiring assignment.
 
-## Prerequisites
+> **Live Demo →** [revenue-intelligenceinbox.vercel.app](https://revenue-intelligenceinbox.vercel.app) *(update this link after deployment)*
 
-- Node.js 18+ (tested with Node 20)
+---
+
+## What it does
+
+Sales managers receive calls and meeting records from multiple systems. Transcripts arrive late, labels don't always match what was said, and decisions get lost. This app solves that by:
+
+- Showing all 44 source records (30 calls + 14 meetings) in one searchable inbox
+- Routing each conversation to the right category using deterministic rules
+- Letting a manager override any route manually — overrides survive source updates
+- Handling late transcript delivery (M07 arrives in a second batch with no data loss)
+- Exporting a ZIP archive with a machine-readable manifest for every record
+
+---
+
+## Tech stack
+
+| | |
+|---|---|
+| Framework | React 18 + Vite |
+| Language | JavaScript (ES modules) |
+| Styling | Plain CSS |
+| Icons | Lucide React |
+| Export | JSZip |
+| Tests | Vitest + Testing Library |
+| Persistence | Browser localStorage |
+| Deployment | Vercel |
+
+No backend. No API keys. No paid services. Runs entirely in the browser.
+
+---
+
+## Screens
+
+| Screen | What it shows |
+|---|---|
+| **Dashboard** | Total records, transcript coverage, review states, route counts, activity by person with filters |
+| **Inbox** | Searchable table of all 44 records with type, transcript status, route badges, review state |
+| **Detail view** | Full transcript, evidence passages with speaker/timecode, analysis, manual route override |
+| **Manager Brief** | Pre-generated summary for 21 Aug 2026 with evidence quotes linked to source records |
+| **Import / Demo** | Demo load buttons, file picker, import history log, replay guide |
+| **Export** | JSON, CSV, and ZIP archive with manifest |
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 18+
 - npm 9+
 
-## Installation
+### Install and run
 
 ```bash
-cd app
+git clone https://github.com/Ahamed-ammar/revenue_Intelligence_inbox.git
+cd revenue_Intelligence_inbox/app
 npm install
-```
-
-## Startup (development)
-
-```bash
 npm run dev
 ```
 
-Open http://localhost:5173 in your browser.
+Open **http://localhost:5173** in your browser.
 
-## Production build
+### Load the data
+
+On the welcome screen click **"Load Demo Data (Both Batches)"** — this imports all 44 records plus the M07 transcript update in one click.
+
+Or use the **Import / Demo** panel to load them step by step.
+
+### Production build
 
 ```bash
-npm run build
-npm run preview    # serves the built files locally
+npm run build    # outputs to dist/
+npm run preview  # serve the built files locally
 ```
 
-The build output goes to `dist/`. The build succeeds with no warnings.
-
-## Import instructions
-
-### Demo load (recommended for reviewers)
-
-1. Open the app. If no data is loaded, click **"Load Demo Data (Both Batches)"** on the empty-state screen.
-2. Or navigate to **Import / Demo** in the sidebar and use the demo controls:
-   - **Load Initial Batch** — imports 01_initial.json (44 records, 17 transcripts)
-   - **Apply Update Batch** — imports 02_update.json (updates M07, adds 18th transcript)
-   - **Load Both (Demo State)** — loads both batches in sequence
-
-### File import
-
-1. Go to **Import / Demo** in the sidebar.
-2. Click **"Choose JSON file to import"** and select `01_initial.json` or `02_update.json` from the project root.
-3. The import summary appears as a toast notification and in the import history table.
-
-### Replay steps (reproducing the test sequence)
-
-1. Click **Load Initial Batch** — 44 unique records appear (30 calls, 14 meetings), 17 with transcripts.
-2. Click **Load Initial Batch** again — count stays at 44, no duplicates created.
-3. Go to **Inbox**, open **M07** (Willowfield Trust / SpendNest), change its route manually (e.g., to "Customer support") and click **Save manual route**.
-4. Return to **Import / Demo** and click **Apply Update Batch** — M07 gets the updated transcript (18th transcript becomes available), manual route survives.
-5. Click **Load Initial Batch** again — M07's newer revision (v2) is not overwritten by the older revision (v1).
-6. Refresh the browser — all records, manual routes, and review states persist via localStorage.
-
-### Reset
-
-Go to **Import / Demo** and click **Reset All Data**. This clears localStorage and removes all records. A confirmation dialog prevents accidental data loss.
-
-## Export instructions
-
-Go to **Export** in the sidebar:
-
-- **Export JSON** — downloads `revenue-inbox-export.json` with all records and application state.
-- **Export CSV** — downloads `revenue-inbox-export.csv` suitable for spreadsheet applications.
-- **Export ZIP Archive** — downloads `revenue-inbox-export.zip` containing:
-  - `exports/manifest.json` — machine-readable manifest with source_type, source_id, revision, routes, output paths, review state, manual-override flag, and analysis freshness.
-  - `exports/records/<source_type>_<source_id>/source.json` — raw source payload per record.
-  - `exports/records/<source_type>_<source_id>/analysis.json` — analysis output per record.
-  - `exports/README.md` — explains the output structure.
-
-## Metric definitions
-
-| Metric | Numerator | Denominator | Notes |
-| --- | --- | --- | --- |
-| Total records | Distinct (source_type, source_id) pairs | — | Repeated imports do not increase this count |
-| Calls | Records where source_type = "call" | — | |
-| Meetings | Records where source_type = "meeting" | — | |
-| Transcript coverage | Records with usable supplied text (non-blank call transcript or at least one non-blank meeting turn) | All unique source records in the current filter | 17 initially, 18 after update |
-| Review: Pending | Records with reviewState = "pending" | — | No human action taken |
-| Review: Reviewed | Records with reviewState = "reviewed" | — | Manager set a manual route or marked reviewed |
-| Review: Attention | Records with reviewState = "attention" | — | Flagged for special attention |
-| Route counts | Records assigned each route | — | A record can have multiple routes; sum may exceed total records |
-| Activity by person | Records grouped by person | — | Calls: rep_name. Meetings: organizer_email. Organiser is not automatically a salesperson or attendee. All activity is on 21 August 2026 (Asia/Kolkata). |
-
-Click the "Metric definitions" button on the Dashboard for an in-app explanation panel.
-
-## Routing taxonomy
-
-| Route ID | Label | Description |
-| --- | --- | --- |
-| sales_follow_up | Sales follow-up | Prospect/customer showed interest; send materials, schedule demo, or follow up on pricing |
-| customer_support | Customer support | Existing customer reporting product issues, bugs, or workflow problems |
-| security_escalation | Security / access escalation | Access control, permission, or security concerns needing escalation |
-| partnership | Partnership follow-up | Potential partner/supplier discussion about integration or referral |
-| sales_coaching | Sales coaching | Call transcript reveals a coaching opportunity for the rep |
-| internal_ops | Internal / vendor ops | Internal training, billing operations, or vendor operational discussion |
-| human_review | Human review needed | No usable transcript text; needs human intake review |
-
-A record can have multiple routes. The manager can override the suggested route with a manual decision that survives source updates.
-
-## Analysis method
-
-**All analysis is rule-based and deterministic.** No AI model or LLM is used at runtime.
-
-- **Routing rules**: keyword and pattern matching on transcript text and metadata fields (e.g., "proposal" → sales_follow_up, "issue" + "upload" → customer_support, "permission" + "access" → security_escalation).
-- **Summary generation**: template-based summaries built from detected patterns in each individual transcript. No generic summary is used for all conversations.
-- **Evidence extraction**: key turns/phrases matching signal patterns are extracted with speaker, timecode, and turn number.
-- **Confidence assessment**: based on the number of evidence passages found.
-- **Manager brief**: pre-generated based on reading all 18 transcripts after applying the update batch. It is static and does not react to dashboard filters.
-
-When source text changes (e.g., M07 update), the analysis freshness is marked as "pending_review" to signal that the analysis should be re-examined. The manager can mark it as current after reviewing.
-
-## Manual overrides
-
-- A manual route override is stored separately from the suggested route.
-- Source updates never erase a manual override.
-- The manual override is clearly labeled with a "Manual" badge.
-- The manager can reset the manual override to return to the suggested route.
-- Manual overrides persist across browser refreshes via localStorage.
-
-## Analysis freshness
-
-| State | Meaning |
-| --- | --- |
-| Current | Analysis reflects the current source revision |
-| Pending review | Source text changed; analysis should be re-examined |
-| Stale | Analysis is based on an older revision |
-
-## Known limitations
-
-1. **Single-day sample**: All activity falls on 21 August 2026. A date chart alone provides limited insight; the dashboard focuses on person-level and route-level breakdowns instead.
-2. **No verified CRM data**: No authoritative opportunity value, deal stage, or account relationship is supplied. The app does not invent these.
-3. **No cross-meeting speaker identity**: Meeting speaker labels (e.g., "Team member A") are local to each meeting, not cross-meeting identities.
-4. **Deterministic analysis only**: The routing and summary rules are keyword-based and may miss nuanced patterns a human would catch. This is disclosed honestly.
-5. **localStorage persistence**: State is stored in browser localStorage. Clearing browser data will reset the app.
-6. **No audio/video**: No playable media is supplied. Transcripts are the only conversational evidence.
-7. **ZIP export uses JSZip**: The dynamic import means the first ZIP download may take a moment to load the library.
-
-## Tests
+### Run tests
 
 ```bash
 npm test
 ```
 
-22 automated tests covering: initial import (44 records), duplicate import (no inflation), order-independent identity, manual override, update application, manual decision preservation, stale replay, refresh persistence, missing transcript handling, JSON/CSV/ZIP exports, manifest consistency, and error handling. All tests pass.
+22 automated tests, all passing.
 
-See the manual QA checklist below for additional verification steps.
+---
 
-## Manual QA checklist
+## Replay test sequence
 
-- [ ] Load initial batch: 44 records appear (30 calls, 14 meetings)
-- [ ] Load initial batch again: count stays 44, import log shows 44 ignored
-- [ ] Open M07 in inbox: transcript shows "unavailable" with reason
-- [ ] Set M07 manual route to "Customer support": badge shows "Manual"
-- [ ] Apply update batch: M07 now has 27 turns of transcript, manual route still active
-- [ ] Load initial batch again: M07 still at revision 2, manual route preserved
-- [ ] Refresh browser: all data persists
-- [ ] Export JSON: file downloads, opens in browser, shows 44 records
-- [ ] Export CSV: file downloads, opens in spreadsheet, has 45 rows (header + 44)
-- [ ] Export ZIP: archive extracts, manifest.json lists 44 records with valid paths
-- [ ] Import malformed JSON: error message shows, existing data unchanged
-- [ ] Dashboard filters by person and source type work correctly
-- [ ] Manager brief links to source records
+This reproduces the core assignment requirement — duplicate handling, update handling, and manual override preservation:
 
-## Approximate work time
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Load Initial Batch | 44 unique records, 17 transcripts |
+| 2 | Load Initial Batch again | Count stays 44, no duplicates |
+| 3 | Open M07 → set manual route | Route saved with "Manual" badge |
+| 4 | Apply Update Batch | M07 gets 27-turn transcript, manual route intact |
+| 5 | Load Initial Batch again | M07 stays at revision 2, not overwritten |
+| 6 | Refresh the browser | All records, routes, and review states persist |
 
-Approximately 7-8 hours: data inspection (1h), core engine and import logic (2h), UI components (2h), routing and analysis rules (1h), exports (0.5h), tests and build verification (0.5h), documentation (1h).
+---
 
-## How the reviewer can open and test the app
+## Routing taxonomy
 
-1. `cd app && npm install && npm run dev`
-2. Open http://localhost:5173
-3. Click "Load Demo Data (Both Batches)" on the welcome screen
-4. Explore the Dashboard, Inbox, Manager Brief, and Export panels
-5. Follow the replay steps above to test duplicate/update behavior
-6. Use `npm run build` to verify production build succeeds
-7. Use `npm test` to run the automated test suite
+| Route | When it applies |
+|---|---|
+| Sales follow-up | Prospect showed interest; send materials or schedule next step |
+| Customer support | Existing customer reporting product bugs or workflow issues |
+| Security / access | Permission concerns, login problems, access escalation |
+| Partnership | Supplier/partner integration or referral discussion |
+| Sales coaching | Rep coaching opportunity identified in transcript |
+| Internal / vendor ops | Internal training, billing operations, vendor discussion |
+| Human review | No usable transcript — intake tracking only |
+
+A record can have multiple routes. Route counts on the dashboard may exceed record count because of this.
+
+---
+
+## Analysis method
+
+All analysis is **rule-based and deterministic**. No AI model or LLM is called at runtime.
+
+- **Routing** — keyword and pattern matching on transcript text and metadata
+- **Summaries** — per-record template built from detected patterns (not a generic summary for all)
+- **Evidence** — key transcript turns extracted with speaker, timecode, and turn number
+- **Manager brief** — pre-generated after reading all 18 transcripts; static, not filter-reactive
+
+Pre-generated content is clearly labeled in the app and in this README.
+
+---
+
+## Manual route overrides
+
+- Stored separately from the suggested route
+- Never erased by source updates
+- Displayed with a **Manual** badge
+- Manager can reset to the suggested route at any time
+- Persist across browser refreshes via localStorage
+
+---
+
+## Export structure
+
+```
+exports/
+├── manifest.json              ← machine-readable, lists all 44 records
+├── README.md
+└── records/
+    ├── call_<source_id>/
+    │   ├── source.json        ← raw source payload
+    │   └── analysis.json      ← routing, evidence, summary
+    └── meeting_<source_id>/
+        ├── source.json
+        └── analysis.json
+```
+
+Manifest fields: `source_type`, `source_id`, `record_ref`, `applied_source_revision`, `routes`, `is_manually_corrected`, `output_paths`, `processing_state`, `analysis_freshness`, `has_transcript`, `confidence`.
+
+---
+
+## Metric definitions
+
+| Metric | Definition |
+|---|---|
+| Total records | Distinct `(source_type, source_id)` pairs after applying revisions |
+| Transcript coverage | Records with usable text ÷ total unique records (17/44 initially, 18/44 after update) |
+| Activity by person | Calls grouped by `rep_name`; meetings by `organizer_email` (organiser ≠ salesperson) |
+| Route counts | Sum of route assignments — may exceed record count when multi-route records exist |
+
+Full definitions are also available in the **Dashboard → Metric definitions** panel inside the app.
+
+---
+
+## Known limitations
+
+1. Single-day sample (21 Aug 2026) — date charts are not meaningful; person/route breakdowns are used instead
+2. No CRM opportunity values — none supplied; none invented
+3. No cross-meeting speaker identity — labels like "Team member A" are local to each meeting
+4. Keyword-based routing may miss nuanced patterns — disclosed honestly in the app
+5. localStorage is browser-specific — clearing browser data resets the app
+
+---
+
+## Project structure
+
+```
+app/
+├── src/
+│   ├── components/        React UI components
+│   ├── lib/               Core logic (import engine, routing, exports)
+│   ├── data/              Bundled JSON source files
+│   ├── styles/            CSS
+│   └── tests/             Vitest test suite (22 tests)
+├── docs/
+│   ├── findings.md        Three evidence-backed findings
+│   ├── rejected-decision.md  One deliberate design decision
+│   ├── demo-script.md     Three-minute screen recording script
+│   └── slide-outline.md   Five-slide presentation outline
+├── public/
+├── vercel.json
+├── vite.config.js
+└── package.json
+```
+
+---
+
+## License
+
+Built for the SpendNest Revenue Intelligence hiring assignment. Data is de-identified and adapted for assessment purposes.
